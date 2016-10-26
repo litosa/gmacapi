@@ -8,7 +8,7 @@ export class AppSettings {
     }
 
     public static get clientUrl(): string {
-        var localUrl = 'http://localhost:4200';
+        var localUrl = 'http://gmacclient.azurewebsites.net';
         return localUrl;
     }
 

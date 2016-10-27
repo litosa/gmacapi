@@ -5,10 +5,10 @@
             "name": "Launch",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}\\api\\server.js",
+            "program": "${workspaceRoot}/server.js",
             "stopOnEntry": false,
             "args": [],
-            "cwd": "${workspaceRoot}/api",
+            "cwd": "${workspaceRoot}",
             "preLaunchTask": null,
             "runtimeExecutable": null,
             "runtimeArgs": [

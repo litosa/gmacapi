@@ -3,10 +3,26 @@ var router = express.Router();
 var mongojs = require('mongojs');
 var serverSettings = require('../server-settings');
 var db = mongojs(serverSettings.getConnectionString(), ['employees'])
+var server = require('../server');
+var jwt = require('express-jwt');
+
+var authCheck = jwt({
+    secret: new Buffer(serverSettings.getSecret(), 'base64'),
+    audience: serverSettings.getclientId()
+});
 
 //GET
 //api/employees
-router.get('/employees', function (req, res, next) {
+// router.get('/employees', authCheck, (req, res, next) => {
+//     db.employees.find(function (err, employees) {
+//         if (err) {
+//             res.send(err);
+//         }
+//         res.json(employees);
+//     });
+// });
+
+router.get('/employees', (req, res, next) => {
     db.employees.find(function (err, employees) {
         if (err) {
             res.send(err);
@@ -37,15 +53,17 @@ router.post('/employees', function (req, res, next) {
     //     });
     // }
     // else {
-        employee.currentRoom = "Inget";
-        employee.currentZone = "Hemma";
-        employee.isHiding = false;
-        db.employees.save(employee, function (err, employee) {
-            if (err) {
-                res.send(err);
-            }
-            res.json(employee);
-        })
+    employee.isHiding = false;
+    employee.favorites = [];
+    employee.currentZoneId = null;
+    employee.currentRoomId = null;
+
+    db.employees.save(employee, function (err, employee) {
+        if (err) {
+            res.send(err);
+        }
+        res.json(employee);
+    })
     // }
 });
 
@@ -53,60 +71,86 @@ router.post('/employees', function (req, res, next) {
 //PUT {id}
 //api/employees/id
 router.put('/employees/:id', function (req, res, next) {
-    var employee = req.body;
-    var updemployee = {};
+    var body = req.body;
 
-    if (employee.userName) {
-        updemployee.userName = employee.userName;
-    }
+    db.employees.findOne({ _id: req.params.id }, function (err, employee) {
+        if (err) {
+            res.send(err);
+        }
 
-    if (employee.email) {
-        updemployee.email = employee.email;
-    }
+        if (body.firstName) {
+            employee.firstName = body.firstName;
+        }
 
-    if (employee.firstName) {
-        updemployee.firstName = employee.firstName;
-    }
+        if (body.lastName) {
+            employee.lastName = body.lastName;
+        }
 
-    if (employee.lastName) {
-        updemployee.lastName = employee.lastName;
-    }
+        if (body.departmentId) {
+            employee.departmentId = body.departmentId;
+        }
 
-    if (employee.department) {
-        updemployee.department = employee.department;
-    }
+        if (body.imageUrl) {
+            employee.imageUrl = body.imageUrl;
+        }
 
-    if (employee.currentZone) {
-        updemployee.currentZone = employee.currentZone;
-    }
+        if (body.isHiding != undefined) {
+            employee.isHiding = body.isHiding;
 
-    if (employee.currentRoom) {
-        updemployee.currentRoom = employee.currentRoom;
-    }
-
-    if (employee.isHiding) {
-        updemployee.isHiding = employee.isHiding;
-    }
-
-    if (employee.isInBuilding) {
-        updemployee.isInBuilding = employee.isInBuilding;
-    }
-
-    if (!updemployee) {
-        res.status(400);
-        res.json({
-            "error": "Bad Data"
-        })
-    }
-
-    else {
-        db.employees.update({ _id: req.params.id }, updemployee, {}, function (err, employee) {
-            if (err) {
-                res.send(err);
+            if (employee.isHiding) {
+                employee.currentZoneId = null;
+                employee.currentRoomId = null;
             }
-            res.json(employee);
-        });
-    }
+        }
+
+        if (body.isInBuilding = false) {
+            employee.currentZoneId = null;
+            employee.currentRoomId = null;
+        }
+
+        if (body.currentZoneId && body.currentZoneId !== employee.currentZoneId) {
+            if (employee.currentRoomId) {
+                employee.currentRoomId = null;
+            }
+            if (!employee.isHiding) {
+                employee.currentZoneId = body.currentZoneId;
+            }
+        }
+
+        if (body.currentRoomId && body.currentRoomId !== employee.currentRoomId) {
+            if (employee.currentZoneId) {
+                employee.currentZoneId = null;
+            }
+            if (!employee.isHiding) {
+                employee.currentRoomId = body.currentRoomId;
+            }
+            //Kolla om användaren har en aktuell bokning på rummet och checka in
+        }
+
+        if (body.favorites) {
+            employee.favorites = body.favorites;
+        }
+
+        if (!body) {
+            res.status(400);
+            res.json({
+                "error": "Bad Data"
+            })
+        }
+
+        else {
+            db.employees.update({ _id: req.params.id }, employee, {}, function (err, response) {
+                if (err) {
+                    res.send(err);
+                }
+
+                server.updateEmployee(employee);
+
+                // res.json(response);
+                res.json(employee);
+            });
+        }
+    });
 });
 
 module.exports = router;

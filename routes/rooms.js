@@ -4,6 +4,16 @@ var mongojs = require('mongojs');
 var serverSettings = require('../server-settings');
 var db = mongojs(serverSettings.getConnectionString(), ['rooms'])
 
+//GET
+//api/rooms
+router.get('/rooms', function (req, res, next) {
+    db.rooms.find(function (err, rooms) {
+        if (err) {
+            res.send(err);
+        }
+        res.json(rooms);
+    });
+});
 
 //GET {id}
 //api/rooms/id

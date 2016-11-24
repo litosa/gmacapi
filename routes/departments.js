@@ -15,4 +15,15 @@ router.get('/departments', function (req, res, next) {
     });
 });
 
+//GET {id}
+//api/departments/id
+router.get('/departments/:id', function (req, res, next) {
+    db.departments.findOne({ _id: req.params.id }, function (err, department) {
+        if (err) {
+            res.send(err);
+        }
+        res.json(department);
+    });
+});
+
 module.exports = router;

@@ -1,6 +1,4 @@
-var app = require('express')();
-var port = process.env.PORT || 1337;
-
+var express = require('express');
 var path = require('path');
 var bodyParser = require('body-parser');
 var cors = require('cors');
@@ -9,17 +7,15 @@ var employees = require('./routes/employees');
 var zones = require('./routes/zones');
 var rooms = require('./routes/rooms');
 var departments = require('./routes/departments');
+var beacons = require('./routes/beacons');
+var images = require('./routes/images');
+
+var app = express();
 
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-
-app.get('/', function(req, res){
-    res.send('Hello Gmac!');
-})
-
-// app.listen(port);
-
+var port = process.env.PORT || 1337;
 
 app.use(cors());
 
@@ -30,6 +26,8 @@ app.use('/api', employees);
 app.use('/api', zones);
 app.use('/api', rooms);
 app.use('/api', departments);
+app.use('/api', beacons);
+app.use('/api', images);
 
 io.on('connection', (socket) => {
     console.log('user connected');
@@ -38,21 +36,11 @@ io.on('connection', (socket) => {
         console.log('user disconnected');
     });
 
-    exports.test = function () {
-        console.log(io.emit('message', { type: 'new-message', text: 'hej' }));
-        io.emit('message', { type: 'new-message', text: 'hej' });
+    exports.updateEmployee = function (employee) {
+        io.emit('update-employee', employee);
     };
-
-    socket.on('add-message', (message) => {
-        io.emit('message', { type: 'new-message', text: message });
-    });
-
-    socket.on('edit-task', (task) => {
-        console.log('här!?');
-        io.emit('task', { type: 'edited-task', text: task.title });
-    });
 });
 
-app.listen(port, () => {
+http.listen(port, () => {
     console.log('started on port ' + port);
 });
